@@ -1,0 +1,106 @@
+# Specify the number of processes
+worker_processes 1;
+
+error_log  /usr/local/openresty/nginx/conf/error.log debug;
+
+events {
+    # The total number of connections nginx can have including client and upstream connections
+    worker_connections  1024;
+}
+
+http {
+    # Specify DNS servers for resolving domain names during runtime
+    # Tells nginx to only try to resolve IPv4 addresses
+    resolver ${DNS_RESOLVER} ipv6=off;
+
+    # Include the lua packages 
+    lua_package_path '~/lua/?.lua;;';
+
+
+    # The lua_shared_dict create a shared memory zone/dictionary where data are 
+    # accessible by different worker processes. "discovery" and "jwks" are the 
+    # names of these shared zones. 
+    # Since there is a problem with having multiple worker processes for 
+    #lua_resty_openidc, comment out both of the lua_shared_dict directives. 
+
+    #lua_shared_dict discovery 1m;
+    #lua_shared_dict jwks 1m;
+    
+    # Controls whether lua_code is cached between requests. 
+    # If on, lua code is kept in memory between requests
+    #lua_code_cache on;
+
+    # Enables system call sendfile(). Transfer static files from disk to network 
+    # without going through user space
+    sendfile on;
+
+    # Specifies in seconds how long the connection should be kept open 
+    # since the last request. Reduces overhead of establishing new connections 
+    # for each request
+    keepalive_timeout 65;
+
+    access_log /usr/local/openresty/nginx/conf/access.log;
+
+    # Redirect http to https
+    server {
+        listen 80;
+        server_name mgdocs.ncsa.illinois.edu;
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name ${PROXY_FQDN};
+
+        ssl_certificate /etc/letsencrypt/live/${PROXY_FQDN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${PROXY_FQDN}/privkey.pem;	
+
+        location / {
+
+            lua_ssl_trusted_certificate /etc/ssl/certs/ca-bundle.crt;
+
+            access_by_lua_block {
+                local opts = {
+                    redirect_uri = "https://${PROXY_FQDN}/redirect_uri", 
+                    discovery = "https://cilogon.org/.well-known/openid-configuration",
+                    client_id = "cilogon:/client_id/9c02e8c0e767934c8e0bb60807dfa39",
+                    client_secret = "${CLIENT_SECRET}",
+                    ssl_verify = "true",
+                    scope = "openid email profile org.cilogon.userinfo",
+                    redirect_uri_scheme = "https",
+                    session_contents = {id_token=true, access_token=true},
+                    refresh_session_interval = 900,
+                    renew_access_token_on_expiry = true,
+                }
+                ngx.log(ngx.ERR, "Starting OpenID Connect authentication")
+
+                local res, err = require("resty.openidc").authenticate(opts)
+
+                if err then
+                    ngx.log(ngx.ERR, "Authentication failed: " .. err)
+                    ngx.status = 403
+                    ngx.say(err)
+                    ngx.exit(ngx.HTTP_FORBIDDEN)
+                end
+            }
+           
+            # The Content-Type to match with
+            sub_filter_types text/html application/json text/plain;
+
+            # Replaces every occurence of wiki.ncsa.illinois.edu with wiki-p-dev.ncsa.illinois.edu 
+            sub_filter 'https://${TARGET_FQDN}/' 'https://${PROXY_FQDN}/';
+
+            # Turn off matching only once
+            sub_filter_once off;
+
+            proxy_set_header Host ${TARGET_FQDN};
+            proxy_set_header Origin https://${TARGET_FQDN};
+            proxy_set_header Referer https://${TARGET_FQDN};
+      	    proxy_set_header X-Real-IP $remote_addr;
+            #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	        proxy_set_header Authorization "Bearer ${PAT}";  # Your PAT
+            proxy_pass_header Set-Cookie;
+            proxy_pass https://${TARGET_FQDN};
+        }
+    }
+}
