@@ -1,6 +1,11 @@
 # wiki-proxy
 proxied access to protected wiki
 
+## Run with Docker 
+```
+docker run --name wiki-proxy -p 80:80 -e CLIENT_ID=<CLIENT_ID> -e CLIENT_SECRET=<CLIENT_SECRET> -e PAT=<PAT> <IMAGE>
+```
+
 ## Required packages
 - [OpenResty](https://openresty.org/en/installation.html)
   - OpenResty is a collection of packages that includes a version of nginx and lua with additional lua modules
