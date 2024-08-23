@@ -60,7 +60,7 @@ http {
                 ngx.log(ngx.ERR, "Authentication successful, session created")
             }
 
-            proxy_pass https://wiki.ncsa.illinois.edu;
+            proxy_pass ${TARGET_URL};
             proxy_set_header Host wiki.ncsa.illinois.edu;
             proxy_set_header Authorization "Bearer ${PAT}";  # Your PAT
         }

@@ -3,7 +3,7 @@ proxied access to protected wiki
 
 ## Run with Docker 
 ```
-docker run --name wiki-proxy -p 80:80 -e CLIENT_ID=<CLIENT_ID> -e CLIENT_SECRET=<CLIENT_SECRET> -e PAT=<PAT> <IMAGE>
+docker run --name wiki-proxy -p 80:80 -e CLIENT_ID=<CLIENT_ID> -e CLIENT_SECRET=<CLIENT_SECRET> -e PAT=<PAT> -e TARGET_URL=<URL> <IMAGE>
 ```
 
 ## Required packages
