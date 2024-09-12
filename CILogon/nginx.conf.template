@@ -7,7 +7,7 @@ events {
 }
 
 http {
-    resolver ${DNS_RESOLVER} ipv6=off;
+    resolver ${DNS_RESOLVER};
 
     lua_package_path '~/lua/?.lua;;';
     lua_shared_dict discovery 1m;
