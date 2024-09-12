@@ -1,5 +1,4 @@
-#user  nobody;
-worker_processes  1;
+worker_processes auto;
 
 error_log  /usr/local/openresty/nginx/conf/error.log debug;
 
@@ -8,7 +7,7 @@ events {
 }
 
 http {
-    resolver 8.8.8.8;
+    resolver ${DNS_RESOLVER};
 
     lua_package_path '~/lua/?.lua;;';
     lua_shared_dict discovery 1m;
@@ -20,21 +19,23 @@ http {
         ngx.log(ngx.ERR, "OpenResty initialization started")
     }
 
-    sendfile        on;
+    sendfile on;
 
-    keepalive_timeout  65;
+    keepalive_timeout 65;
 
-    access_log  /usr/local/openresty/nginx/conf/access.log;
+    access_log /usr/local/openresty/nginx/conf/access.log;
 
     server {
         listen 80;
-        server_name localhost;
-        root /opt/nginx/html;
+        server_name ${PROXY_FQDN};
 
+        #ssl_certificate /etc/letsencrypt/live/${PROXY_FQDN}/fullchain.pem;
+        #ssl_certificate_key /etc/letsencrypt/live/${PROXY_FQDN}/privkey.pem;
+    
         location / {
             access_by_lua_block {
                 local opts = {
-                    redirect_uri = "http://localhost:80/redirect_uri",
+                    redirect_uri = "http://${PROXY_FQDN}/redirect_uri",
                     discovery = "https://cilogon.org/.well-known/openid-configuration",
                     client_id = "${CLIENT_ID}",
                     client_secret = "${CLIENT_SECRET}",
@@ -60,15 +61,39 @@ http {
                 ngx.log(ngx.ERR, "Authentication successful, session created")
             }
 
-            proxy_pass ${TARGET_URL};
-            proxy_set_header Host wiki.ncsa.illinois.edu;
+            proxy_set_header Host ${TARGET_FQDN};
             proxy_set_header Authorization "Bearer ${PAT}";  # Your PAT
+            proxy_pass https://${TARGET_FQDN};
         }
 
-        error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-            root   html;
+        location /redirect_uri {
+            access_by_lua_block {
+                local opts = {
+                    redirect_uri = "http://${PROXY_FQDN}/redirect_uri",
+                    discovery = "https://cilogon.org/.well-known/openid-configuration",
+                    client_id = "${CLIENT_ID}",
+                    client_secret = "${CLIENT_SECRET}",
+                    ssl_verify = "no",
+                    scope = "openid email profile org.cilogon.userinfo",
+                    redirect_uri_scheme = "http",
+                    session_contents = {id_token=true},
+                    renew_access_token_on_expiry = true,
+                    accept_none_alg = false
+                }
+
+                ngx.log(ngx.ERR, "Starting OpenID Connect authentication")
+
+                local res, err = require("resty.openidc").authenticate(opts)
+
+                if err then
+                    ngx.log(ngx.ERR, "Authentication failed: " .. err)
+                    ngx.status = 403
+                    ngx.say(err)
+                    ngx.exit(ngx.HTTP_FORBIDDEN)
+                end
+                ngx.redirect("/", 302)
+            }
         }
+            
     }
-    include servers/*;
 }
