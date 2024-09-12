@@ -39,7 +39,7 @@ http {
                     redirect_uri = "http://${PROXY_FQDN}/redirect_uri",
                     discovery = "https://cilogon.org/.well-known/openid-configuration",
                     client_id = "cilogon:/client_id/9c02e8c0e767934c8e0bb60807dfa39",
-                    client_secret = "HqTb451EId3AX9vnqVWap2WqWdqqBqlE0mTKGQ0CyJ7oVIB71UBkdfrXAMklm9vRwoGaAwx-UFJvr6DUbV7-eQ",
+                    client_secret = "${CLIENT_SECRET}",
                     ssl_verify = "no",
                     scope = "openid email profile org.cilogon.userinfo",
                     redirect_uri_scheme = "http",
@@ -62,7 +62,8 @@ http {
                 ngx.log(ngx.ERR, "Authentication successful, session created")
             }
 
-            proxy_set_header Host ${TARGET_FQDN};
+            # proxy_set_header Host ${TARGET_FQDN};
+            proxy_set_header Host $host;
             proxy_set_header Authorization "Bearer ${PAT}";  # Your PAT
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -70,6 +71,8 @@ http {
             proxy_set_header X-Original-URI $request_uri;
             proxy_set_header X-NginX-Proxy true;
             proxy_set_header Connection Keep-Alive;
+            proxy_cache_bypass $http_pragma;
+            proxy_no_cache $http_pragma;
             proxy_pass https://${TARGET_FQDN};
 
             proxy_set_header Accept-Encoding "";
@@ -86,9 +89,9 @@ http {
             proxy_set_header Upgrade $http_upgrade;
             # proxy_set_header Connection "Upgrade";
 
-            proxy_hide_header Content-Security-Policy;
+            #proxy_hide_header Content-Security-Policy;
 
-            add_header Content-Security-Policy "default-src 'self' https://wiki.ncsa.illinois.edu 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' https://wiki.ncsa.illinois.edu data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wiki.ncsa.illinois.edu; style-src 'self' 'unsafe-inline' https://wiki.ncsa.illinois.edu; connect-src 'self' https://wiki.ncsa.illinois.edu https://wiki.ncsa.illinois.edu/synchrony; frame-src 'self' https://wiki.ncsa.illinois.edu;" always;
+            #add_header Content-Security-Policy "default-src 'self' https://wiki.ncsa.illinois.edu 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' https://wiki.ncsa.illinois.edu data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wiki.ncsa.illinois.edu; style-src 'self' 'unsafe-inline' https://wiki.ncsa.illinois.edu; connect-src 'self' https://wiki.ncsa.illinois.edu https://wiki.ncsa.illinois.edu/synchrony; frame-src 'self' https://wiki.ncsa.illinois.edu;" always;
 
             add_header Access-Control-Allow-Origin * always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
@@ -97,7 +100,7 @@ http {
             add_header X-Content-Type-Options nosniff always;
             add_header X-Frame-Options SAMEORIGIN always;
             add_header X-XSS-Protection "1; mode=block" always;
-            add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+            #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
             
         }
 
@@ -108,7 +111,7 @@ http {
                     redirect_uri = "http://${PROXY_FQDN}/redirect_uri",
                     discovery = "https://cilogon.org/.well-known/openid-configuration",
                     client_id = "cilogon:/client_id/9c02e8c0e767934c8e0bb60807dfa39",
-                    client_secret = "HqTb451EId3AX9vnqVWap2WqWdqqBqlE0mTKGQ0CyJ7oVIB71UBkdfrXAMklm9vRwoGaAwx-UFJvr6DUbV7-eQ",
+                    client_secret = "${CLIENT_SECRET}",
                     ssl_verify = "no",
                     scope = "openid email profile org.cilogon.userinfo",
                     redirect_uri_scheme = "http",
@@ -139,6 +142,7 @@ http {
             proxy_set_header X-Original-URI $request_uri;
             proxy_set_header X-NginX-Proxy true;
             proxy_set_header Connection Keep-Alive;
+            proxy_set_body $request_body;
             proxy_pass https://${TARGET_FQDN};
 
             proxy_set_header Accept-Encoding "";
@@ -155,9 +159,9 @@ http {
             proxy_set_header Upgrade $http_upgrade;
             # proxy_set_header Connection "Upgrade";
 
-            proxy_hide_header Content-Security-Policy;
+            #proxy_hide_header Content-Security-Policy;
 
-            add_header Content-Security-Policy "default-src 'self' https://wiki.ncsa.illinois.edu 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' https://wiki.ncsa.illinois.edu data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wiki.ncsa.illinois.edu; style-src 'self' 'unsafe-inline' https://wiki.ncsa.illinois.edu; connect-src 'self' https://wiki.ncsa.illinois.edu https://wiki.ncsa.illinois.edu/synchrony; frame-src 'self' https://wiki.ncsa.illinois.edu;" always;
+            #add_header Content-Security-Policy "default-src 'self' https://wiki.ncsa.illinois.edu 'unsafe-inline' 'unsafe-eval' data:; img-src 'self' https://wiki.ncsa.illinois.edu data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wiki.ncsa.illinois.edu; style-src 'self' 'unsafe-inline' https://wiki.ncsa.illinois.edu; connect-src 'self' https://wiki.ncsa.illinois.edu https://wiki.ncsa.illinois.edu/synchrony; frame-src 'self' https://wiki.ncsa.illinois.edu;" always;
 
             add_header Access-Control-Allow-Origin * always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
@@ -166,7 +170,7 @@ http {
             add_header X-Content-Type-Options nosniff always;
             add_header X-Frame-Options SAMEORIGIN always;
             add_header X-XSS-Protection "1; mode=block" always;
-            add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+            #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
             
         }
 
