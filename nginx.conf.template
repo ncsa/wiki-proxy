@@ -45,8 +45,8 @@ http {
         listen 443 ssl;
         server_name ${PROXY_FQDN};
 
-        ssl_certificate /etc/letsencrypt/live/${PROXY_FQDN}-0006/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/${PROXY_FQDN}-0006/privkey.pem;	
+        ssl_certificate /etc/letsencrypt/live/${PROXY_FQDN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${PROXY_FQDN}/privkey.pem;	
 
         location / {
 
