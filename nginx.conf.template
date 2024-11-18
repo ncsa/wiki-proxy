@@ -81,7 +81,7 @@ http {
             sub_filter_types text/html application/json text/plain;
 
             # Replaces every occurence of wiki.ncsa.illinois.edu with wiki-p-dev.ncsa.illinois.edu 
-            sub_filter 'https://${TARGET_FQDN}/' 'https://{PROXY_FQDN}/';
+            sub_filter 'https://${TARGET_FQDN}/' 'https://${PROXY_FQDN}/';
 
             # Turn off matching only once
             sub_filter_once off;
