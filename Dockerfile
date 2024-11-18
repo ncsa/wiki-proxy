@@ -15,7 +15,6 @@ RUN /usr/local/openresty/luajit/bin/luarocks install lua-resty-session
 
 # Copy custom nginx.conf
 COPY ./nginx.conf.template /usr/local/openresty/nginx/conf/
-#COPY /etc/letsencrypt/live/ /etc/letsencrypt/live/
 
 CMD ["/bin/sh", "-c", "envsubst '${CLIENT_ID} ${CLIENT_SECRET} ${PAT} ${PROXY_FQDN} ${TARGET_FQDN} ${DNS_RESOLVER}' < /usr/local/openresty/nginx/conf/nginx.conf.template > /usr/local/openresty/nginx/conf/nginx.conf && openresty -g 'daemon off;'"]
 
