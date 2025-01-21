@@ -41,6 +41,13 @@ http {
 
     access_log /usr/local/openresty/nginx/conf/access.log;
 
+    # Redirect http to https
+    server {
+        listen 80;
+        server_name mgdocs.ncsa.illinois.edu;
+        return 301 https://$host$request_uri;
+    }
+
     server {
         listen 443 ssl;
         server_name ${PROXY_FQDN};
