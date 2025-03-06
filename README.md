@@ -1,47 +1,64 @@
-# wiki-proxy
-proxied access to protected wiki
+# OpenResty Reverse Proxy with CILogon OIDC Authentication
 
-## Required packages
-- [OpenResty](https://openresty.org/en/installation.html)
-  - OpenResty is a collection of packages that includes a version of nginx and lua with additional lua modules
-- [lua-resty-openidc (depends on lua-resty-http, lua-resty-session, lua-resty-jwt)](https://github.com/zmartzone/lua-resty-openidc)
-  - This is the package that is used to authenticate users with an OpenID Connect provider
-- [nginx](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/)
-  - The standard nginx package
+This repository contains the setup and configuration for deploying an OpenResty-based reverse proxy (version openresty/1.27.1.1) that uses CILogon for OpenID Connect (OIDC) authentication. The reverse proxy also supports SSL to ensure secure communication with the backend website. 
 
-### Recommended packages
-- [luarocks (lua package manager)](https://luarocks.org/)
+## Features
 
-## Setup CILogon Client
-- [Confluence Guide](https://wiki.ncsa.illinois.edu/pages/viewpage.action?spaceKey=ICI&title=CiLogon+setup+process)
-- The standard callback URL should be something like `https://<your-domain>/redirect_uri`
+- **Reverse Proxy**: Acts as an intermediary between users and a backend website.
 
-## Commands to Run Nginx
-- Run the proxy: `sudo openresty`
-  - Standard nginx: `nginx`
-- Test syntax: `sudo openresty -t`
-  - Standard nginx: `nginx -t`
-- Reload the configuration: `sudo openresty -s reload`
-  - Standard nginx: `nginx -s reload`
-- Stop the server: `sudo openresty -s quit`
-  - Standard nginx: `nginx -s quit`
-- Specify the configuration file: `sudo openresty -c /path/to/nginx.conf`
-  - Standard nginx: `nginx -c /path/to/nginx.conf`
+- **OIDC Authentication**: Uses CILogon to authenticate users before granting access to the proxied website. After successful authentication, users are logged in as a service account to interact with the backend.
 
-## Proxy to Confluence
-- The location has to be root, i.e. `location / {}`
-- To the confluence website: `proxy_pass https://wiki.ncsa.illinois.edu` 
-- Auto-login to an account: `proxy_set_header Authorization "Bearer <PAT>";`
-  - PAT can be generated from the user's account settings
-- Other heads are used to make sure the contents can be loaded. Some may be redundant or unrelated.
+- **SSL Support**: Ensures secure communication with the proxied backend.
 
-### Potential Issues
-- Go to Find Spaces -> Click into a space will lead the user to the real address that starts 
-with https://wiki.ncsa.illinois.edu
-- The Analytics page does not work
+## Prerequisites
 
-### Authentication Error
-The proxy is working, but the authentication isn't. The issue is described in the markdown in 
-the folders:
-- [CILogon authentication error](/CILogon/README.md)
-- [Keycloak authentication error](/keycloak_test/README.md)
+- **Docker**: Ensure that Docker is installed and running on your system.
+
+- **CILogon Client**: Register your application with CILogon and obtain the necessary client credentials (Client ID and Client Secret).
+
+## Using the Pre-Built Image
+
+1. Pull the pre-built image:
+
+```
+docker pull ghcr.io/ncsa/wiki-proxy:production
+```
+
+2. Run the Docker container
+```
+docker run \
+  -e CLIENT_ID='...' \
+  -e CLIENT_SECRET='...' \
+  -e PAT='...' \
+  -e PROXY_FQDN='...' \
+  -e TARGET_FQDN='...' \
+  -p 443:443 \
+  -p 80:80 \
+  -v /etc/letsencrypt:/etc/letsencrypt \
+  -v /etc/ssl/:/etc/ssl/ \
+  ghcr.io/ncsa/wiki-proxy:production 
+```
+
+## Configuration Details
+
+### NGINX Configuration Highlights
+**OIDC Authentication**: The nginx.conf includes directives to handle OIDC authentication using lua-resty-openidc. It validates tokens and ensures only authenticated users can access the proxied backend.
+
+**SSL Setup**: The configuration enforces HTTPS and uses the provided SSL certificate and key.
+
+**Reverse Proxy**: Requests are forwarded to the backend website, with appropriate headers set to ensure compatibility.
+
+### Environment Variables
+- `CLIENT_ID`: The client id given by the OIDC provider
+- `CLIENT_SECRET`: The client secret given by the OIDC provider
+- `PAT`: The Personal Access Token for the service account
+- `PROXY_FQDN`: The URL of the proxy 
+- `TARGET_FQDN`: The URL of the backend site 
+
+## Troubleshooting
+
+- **Authentication Errors**: Ensure that the CILogon Client ID, Client Secret, and Discovery URL are correctly configured.
+
+- **SSL Errors**: Verify that the paths to your SSL certificate and private key are correct.
+
+- **Proxy Issues**: Confirm that the backend URL is reachable.
